@@ -1,0 +1,3 @@
+cloud_market_watch_backend_homepage:
+    pattern:  /populate
+    defaults: { _controller: CloudMarketWatchBackendBundle:Default:index }

@@ -1,0 +1,7 @@
+parameters:
+#    cloud_market_watch_backend.example.class: CloudMarketWatch\BackendBundle\Example
+
+services:
+#    cloud_market_watch_backend.example:
+#        class: %cloud_market_watch_backend.example.class%
+#        arguments: [@service_id, "plain_value", %parameter%]
