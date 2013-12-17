@@ -1,5 +1,5 @@
 <?php
-namespace Mapbase\CustomerAppBundle\Command;
+namespace CloudMarketWatch\BackendBundle\Command;
 
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Input\InputArgument;
@@ -13,8 +13,7 @@ class AwsUpdateCommand extends ContainerAwareCommand
     {
         $this
             ->setName('cws:awsupdate')
-            ->setDescription('Grabs the latest market data from AWS')
-        ;
+            ->setDescription('Grabs the latest market data from AWS');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
