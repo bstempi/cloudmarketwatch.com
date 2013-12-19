@@ -137,7 +137,7 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 					->setDate(
 							\DateTime::createFromFormat("Y-m-d*H:i:s|+",
 									$history['Timestamp']));
-			$priceHistory->setPrice($history['SpotPrice'] * 100 * 1000);
+			$priceHistory->setPrice($history['SpotPrice'] * 1000000);
 			$priceHistory->setAvailabilityZone($history['AvailabilityZone']);
 			$priceHistory->setProduct($product);
 
