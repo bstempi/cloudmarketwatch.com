@@ -13,6 +13,8 @@ class Product
 	/** @ORM\Id @ORM\Column(type="bigint") @ORM\GeneratedValue */
 	private $id;
 	/** @ORM\Column(type="string", length=25) */
+	private $distributionType;
+	/** @ORM\Column(type="string", length=25) */
 	private $instanceType;
 	/** @ORM\Column(type="string", length=25) */
 	private $platform;
@@ -25,6 +27,30 @@ class Product
     public function getId()
     {
         return $this->id;
+    }
+    
+    /**
+     * Get distributionType
+     *
+     * @param string $distributionType
+     * @return string
+     */
+    public function getDistributionType($distributionType)
+    {
+    	return $this->distributionType;
+    }
+    
+    /**
+     * Set distributionType
+     *
+     * @param string $distributionType
+     * @return Product
+     */
+    public function setDistributionType($distributionType)
+    {
+    	$this->distributionType = $distributionType;
+    
+    	return $this;
     }
 
     /**
