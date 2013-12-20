@@ -58,6 +58,7 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 		$this->logger = $this->getContainer()->get('logger');
 
 		$this->logger->info("AWS spot price update started");
+		$this->em->getConnection()->beginTransaction();
 
 		// Create an array of configuration options for AWS
 		// TODO Don't hard-code the region in the future
@@ -88,6 +89,7 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 		// Flush to db
 		$this->logger->info("Flushing data to db");
 		$this->em->flush();
+		$this->em->getConnection()->commit();
 
 		$this->logger->info("Finished");
 	}
@@ -108,6 +110,8 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 								. " and "
 								. $endDate->format(\DateTime::ISO8601));
 
+		$i = 0;
+		
 		do {
 			// Make a request
 			$awsResponse = $ec2Client
@@ -120,9 +124,12 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 
 			// Are there more?  Then loop again
 			$nextToken = $awsResponse['NextToken'];
+			$i++;
 
 		} while (!empty($nextToken));
 
+		// Final flush and log message
+		$this->em->flush();
 		$this->logger->info("Done");
 	}
 
@@ -142,6 +149,8 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 			$priceHistory->setProduct($product);
 
 			$this->em->persist($priceHistory);
+			$this->em->flush();
+			$this->em->detach($priceHistory);
 		}
 	}
 
@@ -186,7 +195,7 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 
 		$maxDateQuery = $this->em
 				->createQuery(
-						"SELECT rh FROM CloudMarketWatch\BackendBundle\Entity\RunHistory rh ORDER BY rh.date, rh.id DESC");
+						"SELECT rh FROM CloudMarketWatch\BackendBundle\Entity\RunHistory rh ORDER BY rh.date DESC");
 		$maxDateQuery->setMaxResults(1);
 		$maxDateQueryResult = $maxDateQuery->getOneOrNullResult();
 		$lastRunDate = null;
