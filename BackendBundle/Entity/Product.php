@@ -32,10 +32,9 @@ class Product
     /**
      * Get distributionType
      *
-     * @param string $distributionType
      * @return string
      */
-    public function getDistributionType($distributionType)
+    public function getDistributionType()
     {
     	return $this->distributionType;
     }
