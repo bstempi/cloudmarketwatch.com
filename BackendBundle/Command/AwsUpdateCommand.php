@@ -24,6 +24,17 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 	private $em;
 
 	/**
+	 * Handle to the lock file
+	 */
+	private $lockFile;
+	
+	/**
+	 * Name of the lock file
+	 * @var unknown
+	 */
+	private static $lockFileName = "awsupdate.lock";
+	
+	/**
 	 * Logger for logging
 	 * @var unknown
 	 */
@@ -59,6 +70,12 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 
 		$this->logger->info("AWS spot price update started");
 		$this->em->getConnection()->beginTransaction();
+
+		// Check to see that we're the only AWS update running
+		if ($this->isDuplicateProcessRunning()) {
+			$this->logger->info("Duplicate process detected -- exiting");
+			return;
+		}
 
 		// Create an array of configuration options for AWS
 		// TODO Don't hard-code the region in the future
@@ -133,6 +150,13 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 		// Final flush and log message
 		$this->em->flush();
 		$this->logger->info("Done");
+	}
+
+	// TODO Document me
+	private function isDuplicateProcessRunning() {
+		$this->lockFile = fopen("awsupdate.lock", "w");
+		
+		return !flock($this->lockFile, LOCK_NB | LOCK_EX);
 	}
 
 	// TODO Document me
