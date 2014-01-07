@@ -231,7 +231,7 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 	}
 
 	/**
-	 * Gest the Product for the current PriceHistory
+	 * Gets the Product for the current PriceHistory
 	 * 
 	 * This method will look at the PriceHistory and attempt to find a Product object that matches.  If no such object
 	 * exists, then one will be created.
@@ -280,7 +280,7 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 	/**
 	 * Gets the last end date from teh database
 	 * 
-	 * @return Ambigous <NULL, \DateTime, multitype:> null if it none exists, DateTime otherwise
+	 * @return Ambiguous <NULL, \DateTime, multitype:> null if it none exists, DateTime otherwise
 	 */
 	private function getLastRunDate() {
 		$this->logger->info("Finding the last run date");
@@ -310,7 +310,7 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 	 * Because the list of products is small, we don't want to hit the database over and over querying for product
 	 * types.  Rather, we want to query for them all and to store them in memory for quick mapping.
 	 * 
-	 * @return Ambigous <multitype:, array> null if no entries exists, array of Product otherwise
+	 * @return Ambiguous <multitype:, array> null if no entries exists, array of Product otherwise
 	 */
 	private function getProductTypes() {
 		$this->logger->info("Producing product map");
