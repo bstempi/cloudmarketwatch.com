@@ -111,7 +111,7 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 								. $endDate->format(\DateTime::ISO8601));
 
 		$i = 0;
-		
+
 		do {
 			// Make a request
 			$awsResponse = $ec2Client
@@ -120,7 +120,9 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 									"EndTime" => $endDate,
 									"NextToken" => $nextToken));
 
-			$this->persistPrices($awsResponse['SpotPriceHistory']);
+			$this
+					->persistPrices($awsResponse['SpotPriceHistory'],
+							$startDate, $endDate);
 
 			// Are there more?  Then loop again
 			$nextToken = $awsResponse['NextToken'];
@@ -134,7 +136,8 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 	}
 
 	// TODO Document me
-	private function persistPrices($histories) {
+	private function persistPrices($histories, \DateTime $startDate,
+			\DateTime $endDate) {
 		foreach ($histories as $history) {
 
 			$product = $this->getProduct($history);
@@ -148,9 +151,14 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 			$priceHistory->setAvailabilityZone($history['AvailabilityZone']);
 			$priceHistory->setProduct($product);
 
-			$this->em->persist($priceHistory);
-			$this->em->flush();
-			$this->em->detach($priceHistory);
+			// Date check
+			if ($priceHistory->getDate() > $startDate
+					&& $priceHistory->getDate() <= $endDate) {
+
+				$this->em->persist($priceHistory);
+				$this->em->flush();
+				$this->em->detach($priceHistory);
+			}
 		}
 	}
 
