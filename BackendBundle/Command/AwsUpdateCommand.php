@@ -26,6 +26,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 class AwsUpdateCommand extends ContainerAwareCommand {
 
 	/**
+	 * Size of the batches to send to the db
+	 * @var int
+	 */
+	private static $batchSize = 100;
+	/**
 	 * Entity manager for db access
 	 * @var unknown
 	 */
@@ -88,7 +93,6 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 		$this->logger = $this->getContainer()->get('logger');
 
 		$this->logger->info("AWS spot price update started");
-		$this->em->getConnection()->beginTransaction();
 
 		// Check to see that we're the only AWS update running
 		if ($this->isDuplicateProcessRunning()) {
@@ -114,6 +118,9 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 		$startDate = $this->getLastRunDate();
 		$endDate = new \DateTime();
 
+		// Transaction stuff
+		$this->em->beginTransaction();
+
 		foreach ($regions as $currentRegion) {
 			$config['region'] = $currentRegion;
 			$this->getPricesUsingOptions($config, $startDate, $endDate);
@@ -125,7 +132,7 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 		// Flush to db
 		$this->logger->info("Flushing data to db");
 		$this->em->flush();
-		$this->em->getConnection()->commit();
+		$this->em->commit();
 
 		$this->logger->info("Finished");
 	}
@@ -160,12 +167,17 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 
 		do {
 			// Make a request
+			$this->logger->debug("Making request using token " . $nextToken);
 			$awsResponse = $ec2Client
 					->describeSpotPriceHistory(
 							array("StartTime" => $startDate,
 									"EndTime" => $endDate,
 									"NextToken" => $nextToken));
 
+			$this->logger
+					->debug(
+							"Persisting last response; size: "
+									. count($awsResponse['SpotPriceHistory']));
 			$this
 					->persistPrices($awsResponse['SpotPriceHistory'],
 							$startDate, $endDate);
@@ -206,6 +218,9 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 	 */
 	private function persistPrices(array $histories, \DateTime $startDate,
 			\DateTime $endDate) {
+		$objectsInCurrentBatch = 0;
+		$filteredHistoriesCount = 0;
+
 		foreach ($histories as $history) {
 
 			$product = $this->getProductForHistory($history);
@@ -223,11 +238,23 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 			if ($priceHistory->getDate() > $startDate
 					&& $priceHistory->getDate() <= $endDate) {
 
+				$objectsInCurrentBatch++;
 				$this->em->persist($priceHistory);
-				$this->em->flush();
-				$this->em->detach($priceHistory);
+
+				if ($objectsInCurrentBatch % AwsUpdateCommand::$batchSize == 0) {
+					$this->logger->debug("Flushing batch to db transaction");
+					$this->em->flush();
+					$this->em->clear($priceHistory);
+				}
+			} else {
+				$filteredHistoriesCount++;
 			}
 		}
+
+		$this->logger
+				->info(
+						"Filtered out " . $filteredHistoriesCount
+								. " histories that were out of range");
 	}
 
 	/**
