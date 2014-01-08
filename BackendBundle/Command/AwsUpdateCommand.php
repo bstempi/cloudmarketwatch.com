@@ -4,6 +4,8 @@ namespace CloudMarketWatch\BackendBundle\Command;
 use Aws\Ec2\Ec2Client;
 use Aws\Common\Enum\Region;
 
+use Doctrine\ORM\EntityManager;
+
 use CloudMarketWatch\BackendBundle\Entity\PriceHistory;
 use CloudMarketWatch\BackendBundle\Entity\Product;
 use CloudMarketWatch\BackendBundle\Entity\RunHistory;
@@ -32,7 +34,7 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 	private static $batchSize = 100;
 	/**
 	 * Entity manager for db access
-	 * @var unknown
+	 * @var EntityManager
 	 */
 	private $em;
 
@@ -99,7 +101,7 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 			$this->logger->info("Duplicate process detected -- exiting");
 			return;
 		}
-
+		
 		// Create an array of configuration options for AWS
 		// TODO Don't hard-code the region in the future
 		$config = array(
@@ -175,7 +177,7 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 									"NextToken" => $nextToken));
 
 			$this->logger
-					->debug(
+					->info(
 							"Persisting last response; size: "
 									. count($awsResponse['SpotPriceHistory']));
 			$this
