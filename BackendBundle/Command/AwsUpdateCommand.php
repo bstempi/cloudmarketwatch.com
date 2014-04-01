@@ -133,11 +133,11 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 	/**
 	 * Uses the supplied configuration to call the EC2 service and query for prices between the specified dates
 	 * 
-	 * This method handles calling the service multiple times should the result paginate.  As per Amazon spec, the
-	 * prices returned might be outside of the date range.
+	 * This method handles calling the service multiple times should the result paginate.  It also handles filtering
+	 * out prices outside of the range that we requested, which can happen according to the Amazon spec.
 	 * 
 	 * @param array $awsConfig Ec2Client config
-	 * @param \DateTime $startDate Date to start search, inclusive
+	 * @param \DateTime $startDate Date to start search, exclusive
 	 * @param \DateTime $endDate Date to end search, inclusive
 	 */
 	private function getPricesUsingOptions(array $awsConfig,
