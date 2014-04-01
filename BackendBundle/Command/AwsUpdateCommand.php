@@ -120,9 +120,6 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 		$startDate = $this->getLastRunDate();
 		$endDate = new \DateTime();
 
-		// Transaction stuff
-		$this->em->beginTransaction();
-
 		foreach ($regions as $currentRegion) {
 			$config['region'] = $currentRegion;
 			$this->getPricesUsingOptions($config, $startDate, $endDate);
@@ -130,12 +127,6 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 
 		// Record the fact that we did this operation
 		$this->persistRunHistory($endDate);
-
-		// Flush to db
-		$this->logger->info("Flushing data to db");
-		$this->em->flush();
-		$this->em->commit();
-
 		$this->logger->info("Finished");
 	}
 
@@ -168,6 +159,7 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 		$i = 0;
 
 		do {
+			
 			// Make a request
 			$this->logger->debug("Making request using token " . $nextToken);
 			$awsResponse = $ec2Client
@@ -187,11 +179,8 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 			// Are there more?  Then loop again
 			$nextToken = $awsResponse['NextToken'];
 			$i++;
-
 		} while (!empty($nextToken));
 
-		// Final flush and log message
-		$this->em->flush();
 		$this->logger->info("Done");
 	}
 
@@ -244,7 +233,7 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 				$this->em->persist($priceHistory);
 
 				if ($objectsInCurrentBatch % AwsUpdateCommand::$batchSize == 0) {
-					$this->logger->debug("Flushing batch to db transaction");
+					$this->logger->debug("Flushing batch to db");
 					$this->em->flush();
 					$this->em->clear($priceHistory);
 				}
@@ -252,6 +241,11 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 				$filteredHistoriesCount++;
 			}
 		}
+		
+		// Final flush
+		$this->logger->debug("Flushing batch to db");
+		$this->em->flush();
+		$this->em->clear($priceHistory);
 
 		$this->logger
 				->info(
@@ -304,6 +298,7 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 		$runHistory = new RunHistory();
 		$runHistory->setDate($endDate);
 		$this->em->persist($runHistory);
+		$this->em->flush();
 	}
 
 	/**
