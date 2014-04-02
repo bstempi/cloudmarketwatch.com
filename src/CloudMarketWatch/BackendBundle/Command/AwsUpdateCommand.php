@@ -31,7 +31,7 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 	 * Size of the batches to send to the db
 	 * @var int
 	 */
-	private static $batchSize = 100;
+	private static $batchSize = 1000;
 	/**
 	 * Entity manager for db access
 	 * @var EntityManager
@@ -114,8 +114,6 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 		$regions = array_diff(array_unique(Region::values()),
 				AwsUpdateCommand::$regionBlacklist);
 
-		$this->productTypes = $this->getProductTypes();
-
 		// Get the date bounds for our query
 		$startDate = $this->getLastRunDate();
 		$endDate = new \DateTime();
@@ -155,7 +153,7 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 								. $startDate->format(\DateTime::ISO8601)
 								. " and "
 								. $endDate->format(\DateTime::ISO8601));
-
+		
 		$i = 0;
 
 		do {
@@ -211,6 +209,8 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 			\DateTime $endDate) {
 		$objectsInCurrentBatch = 0;
 		$filteredHistoriesCount = 0;
+		
+		$this->productTypes = $this->getProductTypes();
 
 		foreach ($histories as $history) {
 
@@ -235,7 +235,8 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 				if ($objectsInCurrentBatch % AwsUpdateCommand::$batchSize == 0) {
 					$this->logger->debug("Flushing batch to db");
 					$this->em->flush();
-					$this->em->clear($priceHistory);
+					$this->em->clear();
+					$this->productTypes = $this->getProductTypes();
 				}
 			} else {
 				$filteredHistoriesCount++;
@@ -245,7 +246,7 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 		// Final flush
 		$this->logger->debug("Flushing batch to db");
 		$this->em->flush();
-		$this->em->clear($priceHistory);
+		$this->em->clear();
 
 		$this->logger
 				->info(
@@ -284,6 +285,7 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 
 			$this->productTypes[$instanceType][$distributionType] = $product;
 			$this->em->persist($product);
+			$this->em->flush();
 
 			return $product;
 		}
@@ -302,7 +304,7 @@ class AwsUpdateCommand extends ContainerAwareCommand {
 	}
 
 	/**
-	 * Gets the last end date from teh database
+	 * Gets the last end date from the database
 	 * 
 	 * @return Ambiguous <NULL, \DateTime, multitype:> null if it none exists, DateTime otherwise
 	 */
